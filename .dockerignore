@@ -1,0 +1,11 @@
+node_modules
+server/node_modules
+src
+public
+*.md
+.gitignore
+eslint.config.js
+tsconfig*.json
+vite.config.ts
+deploy.py
+server/todos.db

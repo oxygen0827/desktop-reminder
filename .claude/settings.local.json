@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh *)",
+      "Bash(rsync -avz --progress --exclude=node_modules --exclude=server/node_modules --exclude=src --exclude=public '--exclude=*.md' --exclude=.gitignore --exclude=eslint.config.js '--exclude=tsconfig*.json' --exclude=vite.config.ts --exclude=deploy.py --exclude=server/todos.db . 'spark2:~/remind-app/')",
+      "Bash(tar czf *)",
+      "Bash(scp /tmp/remind-app.tar.gz spark2:~/remind-app.tar.gz)",
+      "Bash(echo \"exit: $?\")"
+    ]
+  }
+}

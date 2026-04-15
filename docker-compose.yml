@@ -1,0 +1,13 @@
+services:
+  remind-app:
+    build: .
+    container_name: remind-app
+    network_mode: host
+    environment:
+      - PORT=6135
+    volumes:
+      - remind-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  remind-data:
