@@ -317,12 +317,15 @@ body {
 
 .header-center {
   flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: center;
 }
 
 .header-center .search-box {
-  width: 280px;
+  width: 100%;
+  max-width: 280px;
+  min-width: 120px;
 }
 
 .header-right {

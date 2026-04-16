@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      background: transparent;
+      overflow: hidden;
+      width: 140px;
+      height: 180px;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="140" height="180"></canvas>
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    // ── 洪水填充去背景 ───────────────────────────────────────────
+    // 从图片四周边缘向内，把与背景色相近的像素设为透明。
+    // 由于是从外向内扩展，恐龙内部的浅色像素（白色高光）不会被误删。
+    function removeBg(octx, w, h, threshold) {
+      const id = octx.getImageData(0, 0, w, h);
+      const d = id.data;
+
+      // 取左上角像素作为背景色基准
+      const bgR = d[0], bgG = d[1], bgB = d[2];
+      const thresh2 = threshold * threshold;
+
+      const visited = new Uint8Array(w * h);
+      // 用普通数组模拟队列，head 指针推进，避免 shift() 的 O(n) 开销
+      const queue = new Int32Array(w * h * 2);
+      let head = 0, tail = 0;
+
+      // 种子：四条边上的所有像素
+      for (let x = 0; x < w; x++) {
+        queue[tail++] = x;
+        queue[tail++] = x + (h - 1) * w;
+      }
+      for (let y = 1; y < h - 1; y++) {
+        queue[tail++] = y * w;
+        queue[tail++] = (w - 1) + y * w;
+      }
+
+      while (head < tail) {
+        const idx = queue[head++];
+        if (visited[idx]) continue;
+        visited[idx] = 1;
+
+        const pi = idx << 2;
+        const dr = d[pi]     - bgR;
+        const dg = d[pi + 1] - bgG;
+        const db = d[pi + 2] - bgB;
+        if (dr * dr + dg * dg + db * db > thresh2) continue;
+
+        d[pi + 3] = 0; // 设为完全透明
+
+        const x = idx % w;
+        const y = (idx / w) | 0;
+        if (x > 0)     queue[tail++] = idx - 1;
+        if (x < w - 1) queue[tail++] = idx + 1;
+        if (y > 0)     queue[tail++] = idx - w;
+        if (y < h - 1) queue[tail++] = idx + w;
+      }
+
+      octx.putImageData(id, 0, 0);
+    }
+
+    // ── 加载图片并处理 ───────────────────────────────────────────
+    const img = new Image();
+    img.src = './dinosaur.jpg';
+
+    img.onload = () => {
+      // 按比例缩放，最大填满 130×160（留 5px 四周余量）
+      const maxW = 130, maxH = 160;
+      const scale = Math.min(maxW / img.width, maxH / img.height);
+      const dw = Math.round(img.width  * scale);
+      const dh = Math.round(img.height * scale);
+
+      // 离屏 canvas 用于像素处理
+      const off = document.createElement('canvas');
+      off.width = dw;
+      off.height = dh;
+      const octx = off.getContext('2d');
+      octx.drawImage(img, 0, 0, dw, dh);
+
+      // 去背景（阈值 40，对应色差 ΔE≈40，能覆盖 JPEG 压缩噪声）
+      removeBg(octx, dw, dh, 40);
+
+      // 绘制偏移量（在 140×180 窗口内居中）
+      const drawX = Math.round((140 - dw) / 2);
+      const drawY = Math.round((180 - dh) / 2);
+
+      // ── 待机动画：轻微上下浮动 ──────────────────────────────
+      let t = 0;
+
+      function render() {
+        ctx.clearRect(0, 0, 140, 180);
+        // 正弦浮动 ±3px，周期约 3.8s（t 步长 0.033，60fps）
+        const bobY = Math.sin(t) * 3;
+        ctx.drawImage(off, drawX, drawY + bobY);
+        t += 0.033;
+        requestAnimationFrame(render);
+      }
+
+      render();
+    };
+
+    img.onerror = () => {
+      // 如果图片加载失败，显示提示文字
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('图片未找到', 10, 90);
+    };
+  </script>
+</body>
+</html>
